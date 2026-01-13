@@ -14,6 +14,7 @@ A professional, modular iOS networking framework built with Swift 6.2. Networkin
 ✅ **Comprehensive Logging** - Request/response debugging  
 ✅ **Auto-Retry** - Exponential backoff with jitter  
 ✅ **Response Caching** - ETag and conditional requests  
+✅ **AI Streaming** - Token-by-token responses (OpenAI, Claude, Gemini)
 
 ## Installation
 
@@ -185,6 +186,41 @@ let user: User = try await apiClient.request(
 )
 ```
 
+### AI Streaming (v1.1.0+)
+
+Stream token-by-token responses from AI APIs:
+
+```swift
+import NetworkingKit
+
+// Create AI client with any provider
+let client = AIStreamClient(
+    provider: OpenAIProvider(apiKey: "sk-..."),
+    streamingClient: URLSessionStreamingClient()
+)
+
+// Stream chat completion
+let messages = [
+    ChatMessage.system("You are a helpful assistant."),
+    ChatMessage.user("Explain Swift concurrency")
+]
+
+for try await delta in client.stream(messages: messages, options: .gpt52()) {
+    print(delta.content ?? "", terminator: "")
+}
+
+// Or use Claude
+let claude = AIStreamClient(provider: ClaudeProvider(apiKey: "sk-ant-..."))
+for try await delta in claude.stream(messages: messages, options: .claude45Sonnet()) {
+    print(delta.content ?? "", terminator: "")
+}
+
+// Or Gemini
+let gemini = AIStreamClient(provider: GeminiProvider(apiKey: "..."))
+for try await delta in gemini.stream(messages: messages, options: .gemini3Flash()) {
+    print(delta.content ?? "", terminator: "")
+}
+```
 
 
 ### Testing with MockHTTPClient
