@@ -18,7 +18,7 @@ import Foundation
 ///     print(delta.content ?? "", terminator: "")
 /// }
 /// ```
-public struct GeminiProvider: AIProvider {
+public struct GeminiProvider: AIImageProvider {
     public static let name = "Gemini"
     
     public let apiKey: String
@@ -188,9 +188,105 @@ public struct GeminiProvider: AIProvider {
             throw AIError.parsingFailed("Failed to parse Gemini response: \(error)")
         }
     }
+    
+    // MARK: - Image Generation
+    
+    public func generateImage(options: ImageGenerationOptions) async throws -> [GeneratedImage] {
+        // Use 'predict' endpoint structure for Imagen/Gemini Image
+        let body = GeminiImageRequest(
+            instances: [
+                GeminiImageInstance(prompt: options.prompt)
+            ],
+            parameters: GeminiImageParameters(
+                sampleCount: options.n,
+                aspectRatio: options.size
+            )
+        )
+        
+        let bodyData = try JSONEncoder().encode(body)
+        guard let bodyParams = try JSONSerialization.jsonObject(with: bodyData) as? [String: Any] else {
+            throw AIError.invalidRequest("Failed to encode request body")
+        }
+        
+        // Imagen 3 endpoint usually models/{model}:predict
+        struct GeminiImageEndpoint: Endpoint {
+            let model: String
+            let apiKey: String
+            let bodyParameters: [String: Any]?
+            
+            var path: String { "models/\(model):predict" }
+            var method: HTTPMethod { .post }
+            var queryParameters: [String: Any]? { ["key": apiKey] }
+        }
+        
+        let endpoint = GeminiImageEndpoint(
+            model: options.model,
+            apiKey: apiKey,
+            bodyParameters: bodyParams
+        )
+        
+        let request = try RequestBuilder(baseURL: baseURL, defaultHeaders: defaultHeaders)
+            .build(from: endpoint)
+            
+        let client = URLSessionHTTPClient()
+        let response = try await client.execute(request)
+        
+        guard response.isSuccess else {
+             // Try to parse error
+            if let errorResponse = try? JSONDecoder().decode(GeminiErrorResponse.self, from: response.data) {
+                throw AIError.apiError(code: "\(errorResponse.error.code)", message: errorResponse.error.message)
+            }
+            throw AIError.apiError(code: "\(response.statusCode)", message: "Image generation failed")
+        }
+        
+        do {
+            let imageResponse = try JSONDecoder().decode(GeminiImageResponse.self, from: response.data)
+            return imageResponse.predictions.map {
+                GeneratedImage(
+                    url: nil,
+                    base64Data: $0.bytesBase64Encoded, 
+                    revisedPrompt: nil
+                )
+            }
+        } catch {
+             throw AIError.parsingFailed("Failed to parse Gemini image response: \(error)")
+        }
+    }
 }
 
-// MARK: - Gemini API Types
+// MARK: - Gemini Image Types
+
+private struct GeminiImageRequest: Encodable {
+    let instances: [GeminiImageInstance]
+    let parameters: GeminiImageParameters
+}
+
+private struct GeminiImageInstance: Encodable {
+    let prompt: String
+}
+
+private struct GeminiImageParameters: Encodable {
+    let sampleCount: Int
+    let aspectRatio: String?
+}
+
+private struct GeminiImageResponse: Decodable {
+    let predictions: [GeminiImagePrediction]
+}
+
+private struct GeminiImagePrediction: Decodable {
+    let bytesBase64Encoded: String
+    let mimeType: String
+}
+
+private struct GeminiErrorResponse: Decodable {
+    let error: GeminiError
+}
+
+private struct GeminiError: Decodable {
+    let code: Int
+    let message: String
+}
 
 private struct GeminiRequest: Encodable {
     let contents: [GeminiContent]

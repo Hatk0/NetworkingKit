@@ -69,18 +69,16 @@ public final class RequestBuilder: Sendable {
         }
         
         // Otherwise, combine with base URL
-        guard let baseURL = baseURL else {
+        guard var combinedURL = baseURL else {
             throw NetworkError.invalidURL("No base URL configured and endpoint path is relative: \(path)")
         }
+        let pathComponents = path.split(separator: "/", omittingEmptySubsequences: true)
         
-        // Ensure path starts with /
-        let normalizedPath = path.hasPrefix("/") ? path : "/\(path)"
-        
-        guard let url = URL(string: normalizedPath, relativeTo: baseURL) else {
-            throw NetworkError.invalidURL("\(baseURL.absoluteString)\(normalizedPath)")
+        for component in pathComponents {
+            combinedURL = combinedURL.appendingPathComponent(String(component))
         }
         
-        return url.absoluteURL
+        return combinedURL
     }
 }
 

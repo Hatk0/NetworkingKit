@@ -95,14 +95,9 @@ public final class AIStreamClient<Provider: AIProvider>: Sendable {
         options: ChatOptions
     ) async throws -> ChatMessage {
         var fullContent = ""
-        var finalUsage: Usage?
-        
         for try await delta in stream(messages: messages, options: options) {
             if let content = delta.content {
                 fullContent += content
-            }
-            if let usage = delta.usage {
-                finalUsage = usage
             }
         }
         

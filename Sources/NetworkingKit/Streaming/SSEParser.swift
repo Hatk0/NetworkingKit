@@ -109,13 +109,13 @@ public actor SSEParser {
             Task {
                 do {
                     for try await chunk in stream {
-                        let events = await self.processChunk(chunk)
+                        let events = self.processChunk(chunk)
                         for event in events {
                             continuation.yield(event)
                         }
                     }
                     // Process any remaining buffer
-                    let finalEvents = await self.flush()
+                    let finalEvents = self.flush()
                     for event in finalEvents {
                         continuation.yield(event)
                     }

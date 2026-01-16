@@ -18,7 +18,7 @@ import Foundation
 ///     print(delta.content ?? "", terminator: "")
 /// }
 /// ```
-public struct OpenAIProvider: AIProvider {
+public struct OpenAIProvider: AIImageProvider {
     public static let name = "OpenAI"
     
     public let apiKey: String
@@ -106,6 +106,102 @@ public struct OpenAIProvider: AIProvider {
             throw AIError.parsingFailed("Failed to parse OpenAI response: \(error)")
         }
     }
+
+// MARK: - Image Generaton
+    
+    public func generateImage(options: ImageGenerationOptions) async throws -> [GeneratedImage] {
+        let body = OpenAIImageRequest(
+            prompt: options.prompt,
+            model: options.model,
+            n: options.n,
+            quality: options.quality,
+            responseFormat: options.responseFormat.rawValue,
+            size: options.size,
+            style: options.style,
+            user: options.user
+        )
+        
+        let bodyData = try JSONEncoder().encode(body)
+        guard let bodyParams = try JSONSerialization.jsonObject(with: bodyData) as? [String: Any] else {
+            throw AIError.invalidRequest("Failed to encode request body")
+        }
+        
+        let endpoint = PostEndpoint(path: "images/generations", bodyParameters: bodyParams)
+        
+        let request = try RequestBuilder(baseURL: baseURL, defaultHeaders: defaultHeaders)
+            .build(from: endpoint)
+        
+        // Use standard HTTP client (no streaming)
+        let client = URLSessionHTTPClient()
+        let response = try await client.execute(request)
+        
+        // Check for success
+        // Check for success
+        guard response.isSuccess else {
+            // Try to parse error
+            if let errorResponse = try? JSONDecoder().decode(OpenAIErrorResponse.self, from: response.data) {
+                throw AIError.apiError(code: errorResponse.error.code, message: errorResponse.error.message)
+            }
+            throw AIError.apiError(code: "\(response.statusCode)", message: "Image generation failed")
+        }
+        
+        do {
+            let imageResponse = try JSONDecoder().decode(OpenAIImageResponse.self, from: response.data)
+            return imageResponse.data.map {
+                GeneratedImage(
+                    url: URL(string: $0.url ?? ""),
+                    base64Data: $0.b64Json,
+                    revisedPrompt: $0.revisedPrompt
+                )
+            }
+        } catch {
+            throw AIError.parsingFailed("Failed to parse image response: \(error)")
+        }
+    }
+}
+
+// MARK: - OpenAI Image Types
+
+private struct OpenAIImageRequest: Encodable {
+    let prompt: String
+    let model: String
+    let n: Int
+    let quality: String?
+    let responseFormat: String
+    let size: String
+    let style: String?
+    let user: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case prompt, model, n, quality, size, style, user
+        case responseFormat = "response_format"
+    }
+}
+
+private struct OpenAIImageResponse: Decodable {
+    let created: Int
+    let data: [OpenAIImageData]
+}
+
+private struct OpenAIImageData: Decodable {
+    let url: String?
+    let b64Json: String?
+    let revisedPrompt: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case url
+        case b64Json = "b64_json"
+        case revisedPrompt = "revised_prompt"
+    }
+}
+
+private struct OpenAIErrorResponse: Decodable {
+    let error: OpenAIError
+}
+
+private struct OpenAIError: Decodable {
+    let code: String?
+    let message: String
 }
 
 // MARK: - OpenAI API Types

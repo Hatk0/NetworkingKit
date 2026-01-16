@@ -15,6 +15,7 @@ A professional, modular iOS networking framework built with Swift 6.2. Networkin
 ✅ **Auto-Retry** - Exponential backoff with jitter  
 ✅ **Response Caching** - ETag and conditional requests  
 ✅ **AI Streaming** - Token-by-token responses (OpenAI, Claude, Gemini)
+✅ **AI Image Generation** - DALL-E, Gemini Nano Banana support
 
 ## Installation
 
@@ -223,6 +224,30 @@ for try await delta in gemini.stream(messages: messages, options: .gemini3Flash(
 ```
 
 
+### AI Image Generation (v1.1.1+)
+
+Generate images using OpenAI (DALL-E) or Gemini (Nano Banana):
+
+```swift
+// 1. Create client with provider
+let provider = OpenAIProvider(apiKey: "sk-...")
+// OR let provider = GeminiProvider(apiKey: "...")
+
+let client = AIImageClient(provider: provider)
+
+// 2. Generate image
+let image = try await client.generate(
+    prompt: "A futuristic cyberpunk city",
+    model: "dall-e-3", // or "gemini-2.5-flash-image"
+    size: "1024x1024"
+)
+
+if let url = image.url {
+    print("Image URL: \(url)")
+}
+```
+
+
 ### Testing with MockHTTPClient
 
 ```swift
@@ -334,4 +359,3 @@ The architecture supports future specialized packages:
 - **NetworkingKit-REST** - RESTful API patterns, HATEOAS, pagination
 - **NetworkingKit-GraphQL** - GraphQL queries, mutations, subscriptions
 - **NetworkingKit-WebSocket** - WebSocket connections, auto-reconnect
-- **NetworkingKit-AI** - Streaming responses for AI APIs (OpenAI, etc.)
