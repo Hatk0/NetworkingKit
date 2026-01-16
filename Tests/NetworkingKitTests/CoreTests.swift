@@ -1,41 +1,40 @@
-import Testing
+import XCTest
 import Foundation
 @testable import NetworkingKit
 
-@Suite("Core Layer Tests")
-struct CoreTests {
+final class CoreTests: XCTestCase {
     
     // MARK: - HTTPMethod Tests
     
-    @Test func testHTTPMethodRawValues() {
-        #expect(HTTPMethod.get.rawValue == "GET")
-        #expect(HTTPMethod.post.rawValue == "POST")
-        #expect(HTTPMethod.put.rawValue == "PUT")
-        #expect(HTTPMethod.patch.rawValue == "PATCH")
-        #expect(HTTPMethod.delete.rawValue == "DELETE")
-        #expect(HTTPMethod.head.rawValue == "HEAD")
-        #expect(HTTPMethod.options.rawValue == "OPTIONS")
+    func testHTTPMethodRawValues() {
+        XCTAssertEqual(HTTPMethod.get.rawValue, "GET")
+        XCTAssertEqual(HTTPMethod.post.rawValue, "POST")
+        XCTAssertEqual(HTTPMethod.put.rawValue, "PUT")
+        XCTAssertEqual(HTTPMethod.patch.rawValue, "PATCH")
+        XCTAssertEqual(HTTPMethod.delete.rawValue, "DELETE")
+        XCTAssertEqual(HTTPMethod.head.rawValue, "HEAD")
+        XCTAssertEqual(HTTPMethod.options.rawValue, "OPTIONS")
     }
     
-    @Test func testHTTPMethodDescription() {
-        #expect(HTTPMethod.get.description == "GET")
-        #expect(HTTPMethod.post.description == "POST")
+    func testHTTPMethodDescription() {
+        XCTAssertEqual(HTTPMethod.get.description, "GET")
+        XCTAssertEqual(HTTPMethod.post.description, "POST")
     }
     
     // MARK: - HTTPRequest Tests
     
-    @Test func testHTTPRequestInitialization() {
+    func testHTTPRequestInitialization() {
         let url = URL(string: "https://api.example.com")!
         let request = HTTPRequest(url: url)
         
-        #expect(request.url == url)
-        #expect(request.method == .get)
-        #expect(request.headers.isEmpty)
-        #expect(request.body == nil)
-        #expect(request.timeoutInterval == 60.0)
+        XCTAssertEqual(request.url, url)
+        XCTAssertEqual(request.method, .get)
+        XCTAssertTrue(request.headers.isEmpty)
+        XCTAssertNil(request.body)
+        XCTAssertEqual(request.timeoutInterval, 60.0)
     }
     
-    @Test func testHTTPRequestToURLRequest() {
+    func testHTTPRequestToURLRequest() {
         let url = URL(string: "https://api.example.com")!
         let bodyData = "test".data(using: .utf8)
         let request = HTTPRequest(
@@ -48,28 +47,28 @@ struct CoreTests {
         
         let urlRequest = request.toURLRequest()
         
-        #expect(urlRequest.url == url)
-        #expect(urlRequest.httpMethod == "POST")
-        #expect(urlRequest.allHTTPHeaderFields?["X-Test"] == "Value")
-        #expect(urlRequest.httpBody == bodyData)
-        #expect(urlRequest.timeoutInterval == 30.0)
+        XCTAssertEqual(urlRequest.url, url)
+        XCTAssertEqual(urlRequest.httpMethod, "POST")
+        XCTAssertEqual(urlRequest.allHTTPHeaderFields?["X-Test"], "Value")
+        XCTAssertEqual(urlRequest.httpBody, bodyData)
+        XCTAssertEqual(urlRequest.timeoutInterval, 30.0)
     }
     
-    @Test func testHTTPRequestBuilder() {
+    func testHTTPRequestBuilder() {
         let url = URL(string: "https://api.example.com")!
         let request = HTTPRequest(url: url)
             .method(.put)
             .headers(["H": "V"])
             .timeout(10.0)
         
-        #expect(request.method == .put)
-        #expect(request.headers["H"] == "V")
-        #expect(request.timeoutInterval == 10.0)
+        XCTAssertEqual(request.method, .put)
+        XCTAssertEqual(request.headers["H"], "V")
+        XCTAssertEqual(request.timeoutInterval, 10.0)
     }
     
     // MARK: - HTTPResponse Tests
     
-    @Test func testHTTPResponseInitialization() throws {
+    func testHTTPResponseInitialization() throws {
         let data = "{}".data(using: .utf8)!
         let url = URL(string: "https://api.example.com")!
         let urlResponse = HTTPURLResponse(
@@ -81,13 +80,13 @@ struct CoreTests {
         
         let response = try HTTPResponse(data: data, urlResponse: urlResponse)
         
-        #expect(response.statusCode == 200)
-        #expect(response.isSuccess == true)
-        #expect(response.headers["Content-Type"] == "application/json")
-        #expect(response.isJSON == true)
+        XCTAssertEqual(response.statusCode, 200)
+        XCTAssertTrue(response.isSuccess)
+        XCTAssertEqual(response.headers["Content-Type"], "application/json")
+        XCTAssertTrue(response.isJSON)
     }
     
-    @Test func testHTTPResponseErrorCodes() throws {
+    func testHTTPResponseErrorCodes() throws {
         let data = Data()
         let url = URL(string: "https://api.example.com")!
         
@@ -95,64 +94,64 @@ struct CoreTests {
             data: data,
             urlResponse: HTTPURLResponse(url: url, statusCode: 404, httpVersion: nil, headerFields: [:])!
         )
-        #expect(clientErrorResponse.isClientError == true)
-        #expect(clientErrorResponse.isSuccess == false)
+        XCTAssertTrue(clientErrorResponse.isClientError)
+        XCTAssertFalse(clientErrorResponse.isSuccess)
         
         let serverErrorResponse = try HTTPResponse(
             data: data,
             urlResponse: HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: [:])!
         )
-        #expect(serverErrorResponse.isServerError == true)
+        XCTAssertTrue(serverErrorResponse.isServerError)
     }
     
     // MARK: - NetworkConfiguration Tests
     
-    @Test func testNetworkConfigurationDefaults() {
+    func testNetworkConfigurationDefaults() {
         let config = NetworkConfiguration.default
-        #expect(config.baseURL == nil)
-        #expect(config.timeoutInterval == 60.0)
-        #expect(config.enableLogging == false)
+        XCTAssertNil(config.baseURL)
+        XCTAssertEqual(config.timeoutInterval, 60.0)
+        XCTAssertFalse(config.enableLogging)
     }
     
-    @Test func testNetworkConfigurationPresets() {
+    func testNetworkConfigurationPresets() {
         let dev = NetworkConfiguration.development
-        #expect(dev.enableLogging == true)
-        #expect(dev.logLevel == .verbose)
+        XCTAssertTrue(dev.enableLogging)
+        XCTAssertEqual(dev.logLevel, .verbose)
         
         let prod = NetworkConfiguration.production
-        #expect(prod.logLevel == .error)
+        XCTAssertEqual(prod.logLevel, .error)
     }
     
-    @Test func testNetworkConfigurationBuilder() {
+    func testNetworkConfigurationBuilder() {
         let url = URL(string: "https://stage.api.com")!
         let config = NetworkConfiguration.default
             .baseURL(url)
             .logLevel(.info)
         
-        #expect(config.baseURL == url)
-        #expect(config.logLevel == .info)
-        #expect(config.enableLogging == true)
+        XCTAssertEqual(config.baseURL, url)
+        XCTAssertEqual(config.logLevel, .info)
+        XCTAssertTrue(config.enableLogging)
     }
     
     // MARK: - NetworkError Tests
     
-    @Test func testNetworkErrorDescriptions() {
+    func testNetworkErrorDescriptions() {
         let error = NetworkError.invalidURL("bad-url")
-        #expect(error.errorDescription?.contains("bad-url") == true)
+        XCTAssertTrue(error.errorDescription?.contains("bad-url") == true)
         
         let httpError = NetworkError.httpError(statusCode: 401, data: nil)
-        #expect(httpError.errorDescription?.contains("401") == true)
-        #expect(httpError.recoverySuggestion?.contains("log in again") == true)
+        XCTAssertTrue(httpError.errorDescription?.contains("401") == true)
+        XCTAssertTrue(httpError.recoverySuggestion?.contains("log in again") == true)
     }
     
-    @Test func testNetworkErrorFromURLError() {
+    func testNetworkErrorFromURLError() {
         let urlError = URLError(.timedOut)
         let networkError = NetworkError.from(urlError: urlError)
         
         if case .timeout = networkError {
             // Success
         } else {
-            Issue.record("Expected timeout error")
+            XCTFail("Expected timeout error")
         }
     }
 }

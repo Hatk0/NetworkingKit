@@ -1,6 +1,6 @@
 # NetworkingKit
 
-A professional, modular iOS networking framework built with Swift 6.2. NetworkingKit provides a clean, protocol-oriented architecture with 4 distinct layers for maximum flexibility and reusability.
+A professional, modular iOS networking framework built with modern Swift. NetworkingKit provides a clean, protocol-oriented architecture with 4 distinct layers for maximum flexibility and reusability, supporting Swift 5.9+ and Xcode 15+.
 
 ## Features
 
@@ -226,7 +226,7 @@ for try await delta in gemini.stream(messages: messages, options: .gemini3Flash(
 
 ### AI Image Generation (v1.1.1+)
 
-Generate images using OpenAI (DALL-E) or Gemini (Nano Banana):
+Generate high-quality images directly through NetworkingKit using state-of-the-art AI models like DALL-E and Gemini.
 
 ```swift
 // 1. Create client with provider
@@ -341,8 +341,8 @@ let auth = AuthenticationMiddleware(provider: CustomAuthProvider())
 ## Requirements
 
 - iOS 15.0+ / macOS 12.0+ / tvOS 15.0+ / watchOS 8.0+
-- Swift 6.2+
-- Xcode 16.0+
+- Swift 5.9+
+- Xcode 15.0+
 
 ## License
 

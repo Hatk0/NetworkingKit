@@ -1,9 +1,8 @@
-import Testing
+import XCTest
 import Foundation
 @testable import NetworkingKit
 
-@Suite("Middleware Tests")
-struct MiddlewareTests {
+final class MiddlewareTests: XCTestCase {
     
     // MARK: - Mocks
     
@@ -36,7 +35,7 @@ struct MiddlewareTests {
     
     // MARK: - MiddlewareChain Tests
     
-    @Test func testMiddlewareChainExecutionOrder() async throws {
+    func testMiddlewareChainExecutionOrder() async throws {
         let response = try! HTTPResponse(data: Data(), urlResponse: HTTPURLResponse(url: URL(string: "https://a.com")!, statusCode: 200, httpVersion: nil, headerFields: [:])!)
         let mockClient = MockClient(response: response)
         
@@ -53,12 +52,12 @@ struct MiddlewareTests {
         // Wait a small amount for tasks to complete
         try await Task.sleep(nanoseconds: 100_000_000)
         let finalOrder = await tracker.order
-        #expect(finalOrder == ["1", "2"])
+        XCTAssertEqual(finalOrder, ["1", "2"])
     }
     
     // MARK: - AuthenticationMiddleware Tests
     
-    @Test func testAuthenticationMiddlewareAddsHeader() async throws {
+    func testAuthenticationMiddlewareAddsHeader() async throws {
         let response = try! HTTPResponse(data: Data(), urlResponse: HTTPURLResponse(url: URL(string: "https://a.com")!, statusCode: 200, httpVersion: nil, headerFields: [:])!)
         
         actor CapturedRequest {
@@ -79,12 +78,12 @@ struct MiddlewareTests {
         
         try await Task.sleep(nanoseconds: 100_000_000)
         let request = await captured.request
-        #expect(request?.headers["Authorization"] == "Bearer secret123")
+        XCTAssertEqual(request?.headers["Authorization"], "Bearer secret123")
     }
     
     // MARK: - RetryMiddleware Tests
     
-    @Test func testRetryMiddlewareRetriesOnFailure() async throws {
+    func testRetryMiddlewareRetriesOnFailure() async throws {
         // Setup client to fail with 500 then succeed
         let response500 = try! HTTPResponse(data: Data(), urlResponse: HTTPURLResponse(url: URL(string: "https://a.com")!, statusCode: 500, httpVersion: nil, headerFields: [:])!)
         let response200 = try! HTTPResponse(data: Data(), urlResponse: HTTPURLResponse(url: URL(string: "https://a.com")!, statusCode: 200, httpVersion: nil, headerFields: [:])!)
@@ -103,9 +102,9 @@ struct MiddlewareTests {
         
         let finalResponse = try await chain.execute(HTTPRequest(url: URL(string: "https://test.com")!))
         
-        #expect(finalResponse.statusCode == 200)
+        XCTAssertEqual(finalResponse.statusCode, 200)
         let count = await client.callCount
-        #expect(count == 2)
+        XCTAssertEqual(count, 2)
     }
 }
 

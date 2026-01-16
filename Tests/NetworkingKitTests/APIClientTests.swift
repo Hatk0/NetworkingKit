@@ -1,9 +1,8 @@
-import Testing
+import XCTest
 import Foundation
 @testable import NetworkingKit
 
-@Suite("API Layer Tests")
-struct APIClientTests {
+final class APIClientTests: XCTestCase {
     
     struct User: Codable, Equatable {
         let id: Int
@@ -25,7 +24,7 @@ struct APIClientTests {
         }
     }
     
-    @Test func testAPIClientRequestDecoding() async throws {
+    func testAPIClientRequestDecoding() async throws {
         let mock = MockClient()
         let userData = #"{"id": 1, "name": "John"}"#.data(using: .utf8)!
         let response = try HTTPResponse(
@@ -38,13 +37,13 @@ struct APIClientTests {
         
         let user: User = try await client.get("/users/1")
         
-        #expect(user.id == 1)
-        #expect(user.name == "John")
+        XCTAssertEqual(user.id, 1)
+        XCTAssertEqual(user.name, "John")
         let captured = await mock.capturedRequest
-        #expect(captured?.url.absoluteString.contains("/users/1") == true)
+        XCTAssertTrue(captured?.url.absoluteString.contains("/users/1") == true)
     }
     
-    @Test func testAPIClientPostWithBody() async throws {
+    func testAPIClientPostWithBody() async throws {
         let mock = MockClient()
         let response = try HTTPResponse(
             data: Data(),
@@ -58,14 +57,14 @@ struct APIClientTests {
         try await client.post("/users", body: newUser)
         
         let captured = await mock.capturedRequest
-        #expect(captured?.method == .post)
-        #expect(captured?.body != nil)
+        XCTAssertEqual(captured?.method, .post)
+        XCTAssertNotNil(captured?.body)
         
         let decoded = try JSONDecoder().decode(User.self, from: captured!.body!)
-        #expect(decoded == newUser)
+        XCTAssertEqual(decoded, newUser)
     }
     
-    @Test func testRequestModifiers() async throws {
+    func testRequestModifiers() async throws {
         let mock = MockClient()
         let response = try HTTPResponse(
             data: Data(),
@@ -84,11 +83,11 @@ struct APIClientTests {
         )
         
         let captured = await mock.capturedRequest
-        #expect(captured?.timeoutInterval == 5.0)
-        #expect(captured?.headers["X-Custom"] == "Value")
+        XCTAssertEqual(captured?.timeoutInterval, 5.0)
+        XCTAssertEqual(captured?.headers["X-Custom"], "Value")
     }
     
-    @Test func testAuthorizationModifier() async throws {
+    func testAuthorizationModifier() async throws {
         let mock = MockClient()
         let response = try HTTPResponse(
             data: Data(),
@@ -104,6 +103,6 @@ struct APIClientTests {
         )
         
         let captured = await mock.capturedRequest
-        #expect(captured?.headers["Authorization"] == "Bearer token")
+        XCTAssertEqual(captured?.headers["Authorization"], "Bearer token")
     }
 }
